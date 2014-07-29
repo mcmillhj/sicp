@@ -656,3 +656,188 @@ Now that we have the values for p' and q' we can paste them into the fib procedu
 			  (- count 1)))))
   
   (fib-iter 1 0 0 1 n))
+
+
+;;; Exercise 1.20.  
+;;; The process that a procedure generates is of course dependent on the rules used by the interpreter. 
+;;; As an example, consider the iterative gcd procedure given above. 
+;;; Suppose we were to interpret this procedure using normal-order evaluation, as discussed in section 1.1.5. (The normal-order-evaluation rule for if is described in exercise 1.5.) 
+;;; Using the substitution method (for normal order), illustrate the process generated in evaluating (gcd 206 40) and indicate the remainder operations that are actually performed. 
+;;; How many remainder operations are actually performed in the normal-order evaluation of (gcd 206 40)? In the applicative-order evaluation? 
+
+(define (gcd a b)
+  (if (= b 0)
+      a
+      (gcd b (remainder a b))))
+
+;; Normal-order evaluation fully expand and reduce
+(gcd 206 40) 
+(if (= 40 0)
+    206 
+    (gcd 40 (remainder 206 40)))
+
+(gcd 40 (remainder 206 40))
+(if (= (remainder 206 40) 0)
+    40
+    (gcd (remainder 206 40) (remainder 40 (remainder 206 40))))
+; reduce primitive expression in the if statement (1 remainder)
+(if (= 6 0)
+    40
+    (gcd (remainder 206 40) (remainder 40 (remainder 206 40))))
+
+(gcd (remainder 206 40) (remainder 40 (remainder 206 40)))
+(if (= (remainder 40 (remainder 206 40)) 0)
+    (remainder 206 40)
+    (gcd (remainder 40 (remainder 206 40))
+	 (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))))
+; reduce primitive expression in the if statement (2 remainders) 
+(if (= 4 0)
+    (remainder 206 40)
+    (gcd (remainder 40 (remainder 206 40))
+	 (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))))
+
+(gcd (remainder 40 (remainder 206 40))
+     (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))))
+
+(if (= (remainder (remainder 206 40) (remainder 40 (remainder 206 40))) 0)
+    (remainder 40 (remainder 206 40))
+    (gcd (remainder (remainder 206 40) (remainder 40 (remainder 206 40))) 
+	 (remainder (remainder 40 (remainder 206 40))
+		    (remainder (remainder 206 40) (remainder 40 (remainder 206 40))))))
+; reduce prmitive expression in the if statement (4 remainders)
+(if (= 2 0)
+    (remainder 40 (remainder 206 40))
+    (gcd (remainder (remainder 206 40) (remainder 40 (remainder 206 40))) 
+	 (remainder (remainder 40 (remainder 206 40))
+		    (remainder (remainder 206 40) (remainder 40 (remainder 206 40))))))
+
+(gcd (remainder (remainder 206 40) (remainder 40 (remainder 206 40))) 
+     (remainder (remainder 40 (remainder 206 40))
+		(remainder (remainder 206 40) (remainder 40 (remainder 206 40))))))
+(if (= (remainder (remainder 40 (remainder 206 40))
+		  (remainder (remainder 206 40) 
+			     (remainder 40 (remainder 206 40)))) 0)
+    (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))
+    (gcd (remainder (remainder 40 (remainder 206 40))
+		    (remainder (remainder 206 40) (remainder 40 (remainder 206 40))))
+	 (remainder  (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))
+		     (remainder (remainder 40 (remainder 206 40))
+				(remainder (remainder 206 40) (remainder 40 (remainder 206 40)))))))
+; reduce primitive expression in if statement (7 remainders)
+(if (= 0 0)
+    (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))
+    (gcd (remainder (remainder 40 (remainder 206 40))
+		    (remainder (remainder 206 40) (remainder 40 (remainder 206 40))))
+	 (remainder  (remainder (remainder 206 40) (remainder 40 (remainder 206 40)))
+		     (remainder (remainder 40 (remainder 206 40))
+				(remainder (remainder 206 40) (remainder 40 (remainder 206 40)))))))
+; evaluate final expression (4 remainders) 
+(remainder (remainder 206 40) (remainder 40 (remainder 206 40)))
+(remainder 6 (remainder 40 6))
+(remainder 6 4)
+; => 2
+
+; Total of 1 + 2 + 4 + 7 + 4 = 18 remainders using normal-order application 
+
+(define (gcd a b)
+  (if (= b 0)
+      a
+      (gcd b (remainder a b))))
+
+;; Applicative-order evaluation, evaluate arguments and then apply operators
+(gcd 206 40)
+(if (= 40 0)
+    206
+    (gcd 40 (remainder 206 40)))
+
+(gcd 40 (remainder 206 40))
+(gcd 40 6)
+(if (= 6 0)
+    40 
+    (gcd 6 (remainder 40 6)))
+
+(gcd 6 (remainder 40 6))
+(gcd 6 4)
+(if (= 4 0)
+    6
+    (gcd 4 (remainder 6 4)))
+
+(gcd 4 (remainder 6 4))
+(gcd 4 2)
+(if (= 2 0)
+    4 
+    (gcd 2 (remainder 4 2)))
+
+(gcd 2 (remainder 4 2))
+(gcd 2 0)
+(if (= 0 0)
+    2
+    (gcd 2 (remainder 2 0)))
+
+; => 2
+; 4 remainders evaulated 
+
+;;; Exercise 1.21.  
+;;; Use the smallest-divisor procedure to find the smallest divisor of each of the following numbers: 199, 1999, 19999. 
+
+(define (smallest-divisor n)
+  (define (find-divisor n test-divisor)
+    (cond ((> (square test-divisor) n) n)
+	  ((divides? test-divisor n) test-divisor)
+	  (else (find-divisor n (+ test-divisor 1)))))
+  (define (divides? a b)
+    (= (remainder b a) 0))
+  (define (square x)
+    (* x x))
+  (find-divisor n 2))
+
+(smallest-divisor 199)   ; => 199
+(smallest-divisor 1999)  ; => 1999
+(smallest-divisor 19999) ; => 7
+
+;; The results of applying the procedure smallest-divisor to 199, 1999, and 19999 is that we can see that 199 and 1999 are prime; because they are
+;; their own smallest divisors. 19999 is not prime because it is divisible by 7
+
+
+;;; Exercise 1.22.  
+;;; Most Lisp implementations include a primitive called runtime that returns an integer that specifies the amount of time the system has been running (measured, for example, in microseconds). 
+;;; The following timed-prime-test procedure, when called with an integer n, prints n and checks to see if n is prime. 
+;;; If n is prime, the procedure prints three asterisks followed by the amount of time used in performing the test.
+
+(define (timed-prime-test n)
+  (newline)
+  (display n)
+  (start-prime-test n (runtime)))
+(define (start-prime-test n start-time)
+  (if (prime? n)
+      (report-prime (- (runtime) start-time))))
+(define (report-prime elapsed-time)
+  (display " *** ")
+  (display elapsed-time))
+
+(define (prime? n)
+  (define (find-divisor n test-divisor)
+    (cond ((> (square test-divisor) n) n)
+	  ((divides? test-divisor n) test-divisor)
+	  (else (find-divisor n (+ test-divisor 1)))))
+  (define (divides? a b)
+    (= (remainder b a) 0))
+  (define (square x)
+    (* x x))
+  (define (smallest-divisor n)
+    (find-divisor n 2))
+  (= n (smallest-divisor n)))
+
+;;; Using this procedure, write a procedure search-for-primes that checks the primality of consecutive odd integers in a specified range. 
+;;; Use your procedure to find the three smallest primes larger than 1000; larger than 10,000; larger than 100,000; larger than 1,000,000. 
+;;; Note the time needed to test each prime. 
+;;; Since the testing algorithm has order of growth of (n), you should expect that testing for primes around 10,000 should take about 10 times as long as testing for primes around 1000. 
+;;; Do your timing data bear this out? 
+;;; How well do the data for 100,000 and 1,000,000 support the n prediction? 
+;;; Is your result compatible with the notion that programs on your machine run in time proportional to the number of steps required for the computation? 
+
+(define (search-for-primes start end)
+  (if (even? start)
+      (search-for-primes (+ 1 start) end)
+      (cond ((< start end) (timed-prime-test start)
+	     (search-for-primes (+ 2 start) end)))))
