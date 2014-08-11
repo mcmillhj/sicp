@@ -96,8 +96,6 @@ Using normal-order application the values of the operands 0 and (p) are not eval
 (define (improve guess x)
   (average guess (/ x guess)))
 
-where
-
 (define (average x y)
   (/ (+ x y) 2))
 
@@ -802,29 +800,33 @@ Now that we have the values for p' and q' we can paste them into the fib procedu
 ;;; Exercise 1.22.  
 ;;; Most Lisp implementations include a primitive called runtime that returns an integer that specifies the amount of time the system has been running (measured, for example, in microseconds). 
 ;;; The following timed-prime-test procedure, when called with an integer n, prints n and checks to see if n is prime. 
-;;; If n is prime, the procedure prints three asterisks followed by the amount of time used in performing the test.
+;;; If n is prime, the procedure prints three asterisks followed by the amxount of time used in performing the test.
+(define (runtime) 
+  (let ((p (cons 0 0))) 
+    ((make-primitive-procedure 'nanotime-since-utc-epoch 1) p) 
+    (* 1000 (+ (car p) (/ (cdr p) 1e9)))))
 
 (define (timed-prime-test n)
+  (define (start-prime-test n start-time)
+    (if (prime? n)
+        (report-prime (- (runtime) start-time))))
+  (define (report-prime elapsed-time)
+    (display " *** ")
+    (display elapsed-time))
   (newline)
   (display n)
   (start-prime-test n (runtime)))
-(define (start-prime-test n start-time)
-  (if (prime? n)
-      (report-prime (- (runtime) start-time))))
-(define (report-prime elapsed-time)
-  (display " *** ")
-  (display elapsed-time))
 
 (define (prime? n)
-  (define (find-divisor n test-divisor)
-    (cond ((> (square test-divisor) n) n)
-	  ((divides? test-divisor n) test-divisor)
-	  (else (find-divisor n (+ test-divisor 1)))))
-  (define (divides? a b)
-    (= (remainder b a) 0))
-  (define (square x)
-    (* x x))
   (define (smallest-divisor n)
+    (define (find-divisor n test-divisor)
+      (cond ((> (square test-divisor) n) n)
+            ((divides? test-divisor n) test-divisor)
+            (else (find-divisor n (+ test-divisor 1)))))
+    (define (divides? a b)
+      (= (remainder b a) 0))
+    (define (square x)
+      (* x x))
     (find-divisor n 2))
   (= n (smallest-divisor n)))
 
@@ -841,3 +843,614 @@ Now that we have the values for p' and q' we can paste them into the fib procedu
       (search-for-primes (+ 1 start) end)
       (cond ((< start end) (timed-prime-test start)
 	     (search-for-primes (+ 2 start) end)))))
+
+;; smallest 3 primes larger than 1_000
+;; (search-for-primes 1000 1020)
+;; 1001
+;; 1003
+;; 1005
+;; 1007
+;; 1009 *** .078857421875
+;; 1011
+;; 1013 *** .0791015625
+;; 1015
+;; 1017
+;; 1019 *** .0791015625
+
+;; smallest 3 primes larger than 10_000
+;; (search-for-primes 10000 10039)
+;; 10001
+;; 10003
+;; 10005
+;; 10007 *** .243896484375
+;; 10009 *** .243896484375
+;; 10011
+;; 10013
+;; 10015
+;; 10017
+;; 10019
+;; 10021
+;; 10023
+;; 10025
+;; 10027
+;; 10029
+;; 10031
+;; 10033
+;; 10035
+;; 10037 *** .2431640625
+
+;; smallest 3 primes larger than 100_000
+;; (search-for-primes 100000 100045)
+;; 100001
+;; 100003 *** .7587890625
+;; 100005
+;; 100007
+;; 100009
+;; 100011
+;; 100013
+;; 100015
+;; 100017
+;; 100019 *** .7578125
+;; 100021
+;; 100023
+;; 100025
+;; 100027
+;; 100029
+;; 100031
+;; 100033
+;; 100035
+;; 100037
+;; 100039
+;; 100041
+;; 100043 *** .77709960937
+
+;; smallest 3 primes larger than 1_000_000
+;; (search-for-primes 1000000 1000039)
+;; 1000001
+;; 1000003 *** 2.382080078125
+;; 1000005
+;; 1000007
+;; 1000009
+;; 1000011
+;; 1000013
+;; 1000015
+;; 1000017
+;; 1000019
+;; 1000021
+;; 1000023
+;; 1000025
+;; 1000027
+;; 1000029
+;; 1000031
+;; 1000033 *** 2.448974609375
+;; 1000035
+;; 1000037 *** 2.10791015625
+
+
+;; Results
+;; n         |  prime   | time (ms)      | avg time (ms)
+;; ----------------------------------------------------- 
+;;    1000   |    1009  | 0.078857421875 |
+;;    1000   |    1013  | 0.0791015625   |
+;;    1000   |    1019  | 0.0791015625   | 0.079020182  
+
+;;   10000   |   10007  | 0.243896484375 | 
+;;   10000   |   10009  | 0.243896484375 | 
+;;   10000   |   10037  | 0.2431640625   | 0.243652344   x 3.08 slower
+
+;;  100000   |  100003  | 0.7587890625   |
+;;  100000   |  100019  | 0.7578125      |
+;;  100000   |  100043  | 0.77709960937  | 0.764567057   x 3.14 slower
+
+;; 1000000   | 1000003  | 2.382080078125 |
+;; 1000000   | 1000033  | 2.448974609375 |
+;; 1000000   | 1000037  | 2.10791015625  | 2.312988281   x 3.03 slower
+
+;;; Since the testing algorithm has order of growth of (n), you should expect that testing for primes around 10,000 should take about 10 times as long as testing for primes around 1000. 
+;;; Do your timing data bear this out? 
+No, the timing data shows that for each order of magnitude increase (10x) in the input size execution only took ~3x longer. 
+
+;;; How well do the data for 100,000 and 1,000,000 support the n prediction? 
+Similar to the above, each increase in input size by a factor of 10 took ~3x as long to execute. This is consistent with O(sqrt(10)).  
+
+;;; Is your result compatible with the notion that programs on your machine run in time proportional to the number of steps required for the computation? 
+Yes, these results do seem to verify that programs on my machine run in time proportional to the number of steps required for the computation.
+
+;;; Exercise 1.23: 
+;;; The smallest-divisor procedure shown at the start of this section does lots of needless testing: 
+;;;    After it checks to see if the number is divisible by 2 there is no point in checking to see if it is divisible by any larger even numbers. 
+;;; This suggests that the values used for test-divisor should not be 2, 3, 4, 5, 6, …, but rather 2, 3, 5, 7, 9, …. 
+;;; To implement this change, define a procedure next that returns 3 if its input is equal to 2 and otherwise returns its input plus 2. 
+;;; Modify the smallest-divisor procedure to use (next test-divisor) instead of (+ test-divisor 1). 
+;;; With timed-prime-test incorporating this modified version of smallest-divisor, run the test for each of the 12 primes found in Exercise 1.22. 
+;;; Since this modification halves the number of test steps, you should expect it to run about twice as fast. 
+;;; Is this expectation confirmed? If not, what is the observed ratio of the speeds of the two algorithms, and how do you explain the fact that it is different from 2? 
+
+(define (prime? n)
+  (define (smallest-divisor n)
+    (define (next test-divisor)
+      (if (= test-divisor 2)
+          3
+          (+ 2 test-divisor)))
+    (define (find-divisor n test-divisor)
+      (cond ((> (square test-divisor) n) n)
+            ((divides? test-divisor n) test-divisor)
+            (else (find-divisor n (next test-divisor)))))
+    (define (divides? a b)
+      (= (remainder b a) 0))
+    (define (square x)
+      (* x x))
+    (find-divisor n 2))
+  (= n (smallest-divisor n)))
+
+(define (runtime) 
+  (let ((p (cons 0 0))) 
+    ((make-primitive-procedure 'nanotime-since-utc-epoch 1) p) 
+    (* 1000 (+ (car p) (/ (cdr p) 1e9)))))
+
+(define (timed-prime-test n)
+  (define (start-prime-test n start-time)
+    (if (prime? n)
+        (report-prime (- (runtime) start-time))))
+  (define (report-prime elapsed-time)
+    (display " *** ")
+    (display elapsed-time))
+  (newline)
+  (display n)
+  (start-prime-test n (runtime)))
+
+(define (search-for-primes start end)
+  (if (even? start)
+      (search-for-primes (+ 1 start) end)
+      (cond ((< start end) (timed-prime-test start)
+	     (search-for-primes (+ 2 start) end)))))
+
+;; smallest 3 primes larger than 1_000
+;; (search-for-primes 1000 1020)
+;; 1001
+;; 1003
+;; 1005
+;; 1007
+;; 1009 *** .02783203125
+;; 1011
+;; 1013 *** .027099609375
+;; 1015
+;; 1017
+;; 1019 *** .02685546875
+
+;; smallest 3 primes larger than 10_000
+;; (search-for-primes 10000 10039)
+;; 10001
+;; 10003
+;; 10005
+;; 10007 *** .077880859375
+;; 10009 *** .076904296875
+;; 10011
+;; 10013
+;; 10015
+;; 10017
+;; 10019
+;; 10021
+;; 10023
+;; 10025
+;; 10027
+;; 10029
+;; 10031
+;; 10033
+;; 10035
+;; 10037 *** .076904296875
+
+;; smallest 3 primes larger than 100_000
+;; (search-for-primes 100000 100045)
+;; 100001
+;; 100003 *** .252197265625
+;; 100005
+;; 100007
+;; 100009
+;; 100011
+;; 100013
+;; 100015
+;; 100017
+;; 100019 *** .299072265625
+;; 100021
+;; 100023
+;; 100025
+;; 100027
+;; 100029
+;; 100031
+;; 100033
+;; 100035
+;; 100037
+;; 100039
+;; 100041
+;; 100043 *** .234130859375
+
+;; smallest 3 primes larger than 1_000_000
+;; (search-for-primes 1000000 1000039)
+;; 1000001
+;; 1000003 *** .76611328125
+;; 1000005
+;; 1000007
+;; 1000009
+;; 1000011
+;; 1000013
+;; 1000015
+;; 1000017
+;; 1000019
+;; 1000021
+;; 1000023
+;; 1000025
+;; 1000027
+;; 1000029
+;; 1000031
+;; 1000033 *** .7587890625
+;; 1000035
+;; 1000037 *** .7548828125
+
+;; Results
+;; n         |  prime   | time (ms)       | avg time (ms) | last avg time (ms)
+;; ---------------------------------------------------------------------------  
+;;    1000   |    1009  | 0.02783203125   |               |
+;;    1000   |    1013  | 0.027099609375  |               | x 2.9 faster 
+;;    1000   |    1019  | 0.02685546875   | 0.02726237    | 0.079020182
+
+;;   10000   |   10007  | 0.077880859375  |               |
+;;   10000   |   10009  | 0.076904296875  | x 2.8 slower  | x 3.2 faster
+;;   10000   |   10037  | 0.076904296875  | 0.077229818   | 0.243652344
+ 
+;;  100000   |  100003  | 0.252197265625  |               |
+;;  100000   |  100019  | 0.299072265625  | x 3.4 slower  | x 2.9 faster
+;;  100000   |  100043  | 0.234130859375  | 0.26180013    | 0.764567057
+
+;; 1000000   | 1000003  | 0.76611328125   |               |
+;; 1000000   | 1000033  | 0.7587890625    | x 2.9 slower  | x 3.0 faster
+;; 1000000   | 1000037  | 0.7548828125    | 0.759928385   | 2.312988281
+                                            
+;;; Since this modification halves the number of test steps, you should expect it to run about twice as fast. 
+;;; Is this expectation confirmed? 
+More than confirmed, the new timings show that on average using the next procedure increased execution speed by a factor of 3. 
+There is probably a small margin of error due to my approximation of (runtime). 
+
+;;; If not, what is the observed ratio of the speeds of the two algorithms, and how do you explain the fact that it is different from 2?
+The ratio of speeds was 3-to-1 in favor of the next procedure. I think that it is likely if I ran the trial thousands of times that the increase would approach 2. 
+
+;;; Exercise 1.24: 
+;;; Modify the timed-prime-test procedure of Exercise 1.22 to use fast-prime? (the Fermat method), and test each of the 12 primes you found in that exercise. 
+;;; Since the Fermat test has Θ ( log n ) growth, how would you expect the time to test primes near 1,000,000 to compare with the time needed to test primes near 1000? 
+;;; Do your data bear this out? 
+;;; Can you explain any discrepancy you find? 
+
+(define (fast-prime? n times)
+  (define (fermat-test n)
+    (define (expmod base exp m)
+      (cond ((= exp 0) 1)
+            ((even? exp)
+             (remainder (square (expmod base (/ exp 2) m))
+                        m))
+            (else
+             (remainder (* base (expmod base (- exp 1) m))
+                        m))))        
+    
+    (define (try-it a)
+      (= (expmod a n n) a))
+    (try-it (+ 1 (random (- n 1)))))
+  
+  (cond ((= times 0) true)
+        ((fermat-test n) (fast-prime? n (- times 1)))
+        (else false)))
+
+(define (runtime) 
+  (let ((p (cons 0 0))) 
+    ((make-primitive-procedure 'nanotime-since-utc-epoch 1) p) 
+    (* 1000 (+ (car p) (/ (cdr p) 1e9)))))
+
+(define (timed-prime-test n)
+  (define (start-prime-test n start-time)
+    (if (fast-prime? n 100)
+        (report-prime (- (runtime) start-time))))
+  (define (report-prime elapsed-time)
+    (display " *** ")
+    (display elapsed-time))
+  (newline)
+  (display n)
+  (start-prime-test n (runtime)))
+
+(define (search-for-primes start end)
+  (if (even? start)
+      (search-for-primes (+ 1 start) end)
+      (cond ((< start end) (timed-prime-test start)
+	     (search-for-primes (+ 2 start) end)))))
+
+;; smallest 3 primes larger than 1_000
+;; (search-for-primes 1000 1020)
+;; 1001
+;; 1003
+;; 1005
+;; 1007
+;; 1009 *** 2.619140625
+;; 1011
+;; 1013 *** 2.639892578125
+;; 1015
+;; 1017
+;; 1019 *** 2.785888671875
+
+;; smallest 3 primes larger than 10_000
+;; (search-for-primes 10000 10039)
+
+;; 10001
+;; 10003
+;; 10005
+;; 10007 *** 2.626953125
+;; 10009 *** 2.503173828125
+;; 10011
+;; 10013
+;; 10015
+;; 10017
+;; 10019
+;; 10021
+;; 10023
+;; 10025
+;; 10027
+;; 10029
+;; 10031
+;; 10033
+;; 10035
+;; 10037 *** 2.5419921875
+
+;; smallest 3 primes larger than 100_000
+;; (search-for-primes 100000 100045)
+;; 100001
+;; 100003 *** 2.98974609375
+;; 100005
+;; 100007
+;; 100009
+;; 100011
+;; 100013
+;; 100015
+;; 100017
+;; 100019 *** 3.051025390625
+;; 100021
+;; 100023
+;; 100025
+;; 100027
+;; 100029
+;; 100031
+;; 100033
+;; 100035
+;; 100037
+;; 100039
+;; 100041
+;; 100043 *** 3.079833984375
+
+;; smallest 3 primes larger than 1_000_000
+;; (search-for-primes 1000000 1000039)
+;; 1000001
+;; 1000003 *** 3.52490234375
+;; 1000005
+;; 1000007
+;; 1000009
+;; 1000011
+;; 1000013
+;; 1000015
+;; 1000017
+;; 1000019
+;; 1000021
+;; 1000023
+;; 1000025
+;; 1000027
+;; 1000029
+;; 1000031
+;; 1000033 *** 3.522216796875
+;; 1000035
+;; 1000037 *** 3.716064453125
+
+
+;;; Since the Fermat test has Θ ( log n ) growth, how would you expect the time to test primes near 1,000,000 to compare with the time needed to test primes near 1000? 
+;;; Do your data bear this out? 
+As we increase the input size in order of magnitude the execution time is not moving by much. 
+
+;;; Can you explain any discrepancy you find? 
+Any discrepancies lie in the approximation of the (runtime) primitive and the fact that fast-prime?
+is performing its check 100 times for each prime.
+
+;;; Exercise 1.25.  
+;;; Alyssa P. Hacker complains that we went to a lot of extra work in writing expmod. After all, she says, since we already know how to compute exponentials, we could have simply written
+
+(define (expmod base exp m)
+  (define (fast-expt b n)
+    (cond ((= n 0) 1)
+          ((even? n) (square (fast-expt b (/ n 2))))
+          (else (* b (fast-expt b (- n 1))))))
+  (remainder (fast-expt base exp) m))
+
+;; original
+(define (expmod base exp m)
+  (cond ((= exp 0) 1)
+        ((even? exp)
+         (remainder (square (expmod base (/ exp 2) m))
+                    m))
+        (else
+         (remainder (* base (expmod base (- exp 1) m))
+                    m)))) 
+
+;; Is she correct? Would this procedure serve as well for our fast prime tester? Explain. 
+No, Alyssa is not correct. The important difference is that the original expmod procedure 
+computes its result using successive squaring without having to deal with numbers that are much 
+larger than m. This observation comes from a footnote with the original code: 
+
+"The reduction steps in the cases where the exponent e is greater than 1 are based on the fact that, 
+for any integers x, y, and m, we can find the remainder of x times y modulo m by computing separately the remainders of x modulo m and y modulo m, 
+multiplying these, and then taking the remainder of the result modulo m. 
+For instance, in the case where e is even, we compute the remainder of be/2 modulo m, square this, and take the remainder modulo m. 
+This technique is useful because it means we can perform our computation without ever having to deal with numbers much larger than m."
+
+Example to verify this is correct: 
+
+5 * 7 mod 31 = 4
+5 mod 31 = 5 
+7 mod 31 = 7 
+         = 5 * 7 mod 31
+         = 35 mod 31
+         = 4
+
+Alyssa's method takes much longer to compute due to how the time complexit of even 
+primitive operations increases as the size of their operations increases. It is much faster
+to add two 32-bit integers than two 128-bit integers.
+
+;;; Exercise 1.26: 
+;;; Louis Reasoner is having great difficulty doing Exercise 1.24. 
+;;; His fast-prime? test seems to run more slowly than his prime? test. 
+;;; Louis calls his friend Eva Lu Ator over to help. 
+;;; When they examine Louis’s code, they find that he has rewritten the expmod procedure to use an explicit multiplication, rather than calling square:
+
+(define (expmod base exp m)
+  (cond ((= exp 0) 1)
+        ((even? exp)
+         (remainder 
+          (* (expmod base (/ exp 2) m)
+             (expmod base (/ exp 2) m))
+          m))
+        (else
+         (remainder 
+          (* base 
+             (expmod base (- exp 1) m))
+          m))))
+
+;;; “I don’t see what difference that could make,” says Louis. 
+;;; “I do.” says Eva. “By writing the procedure like that, you have transformed the Θ(log ⁡n) process into a Θ(n) process.” 
+;;; Explain. 
+
+As written, in the even case Louis' code will make two recursive calls to the expmod procedure with the same arguments.
+This means that instead of having a linear recursive algorithm like before, we are now generating a tree of 
+recursive procedure calls. Everytime this branch occurs, both subtrees will compute the same result. When we were
+using the square procedure instead, there were no wasteful calls to expmod. 
+
+; Here is an example of what the original recursive process looked like: 
+(expmod 2 8 2)
+   (expmod 2 4 2) 
+      (expmod 2 2 2)
+         (expmod 2 1 2)
+            (expmod 2 0 2)
+
+; Here is how it looks using Louis' expmod procedure
+(expmod 2 8 2)
+   (expmod 2 4 2)
+      (expmod 2 2 2)
+         (expmod 2 1 2)
+            (expmod 2 0 2) 
+            (expmod 2 0 2)  
+         (expmod 2 1 2)
+            (expmod 2 0 2)  
+            (expmod 2 0 2)  
+      (expmod 2 2 2)
+         (expmod 2 1 2)
+            (expmod 2 0 2)  
+            (expmod 2 0 2) 
+         (expmod 2 1 2)
+            (expmod 2 0 2) 
+            (expmod 2 0 2) 
+   (expmod 2 4 2)
+      (expmod 2 2 2)
+         (expmod 2 1 2)
+            (expmod 2 0 2)  
+            (expmod 2 0 2) 
+         (expmod 2 1 2)
+            (expmod 2 0 2) 
+            (expmod 2 0 2)  
+      (expmod 2 2 2)
+         (expmod 2 1 2)
+            (expmod 2 0 2)  
+            (expmod 2 0 2) 
+         (expmod 2 1 2)  
+            (expmod 2 0 2)  
+            (expmod 2 0 2) 
+
+; As a result of this seemingly innocuous change, this changed the expmod procedure from a O(log n) to O(log 2^n) which reduces to O(n) ( log2(2^n) == n ) 
+
+;;; Exercise 1.27: 
+;;; Demonstrate that the Carmichael numbers listed in Footnote 47 really do fool the Fermat test:
+;;;    561, 1105, 1729, 2465, 2821, and 6601
+;;; That is, write a procedure that takes an integer n and tests whether a n is congruent to a modulo n for every a < n , and try your procedure on the given Carmichael numbers. 
+
+
+; We can re-use the fermat-test procedure from 1.24 and modify it to take a given value 
+; not generate a random one 
+(define (fermat-test n)
+   (define (try-it a)
+     (= (expmod a n n) a))
+   (try-it (+ 1 (random-integer (- n 1)))))
+
+(define (fermat-test n a)
+  (= (expmod a n n) a))
+
+; Given this definition we also need the expmod procedure
+(define (expmod base exp m)
+  (define (even? n)
+    (= (remainder n 2) 0))
+  (define (square n)
+    (* n n))
+  (cond ((= exp 0) 1)
+        ((even? exp)
+         (remainder (square (expmod base (/ exp 2) m))
+                    m))
+        (else
+         (remainder (* base (expmod base (- exp 1) m))
+                    m)))) 
+
+; Now we can create the new fermat test procedure
+(define (fermat-test-all n)
+  (define (fermat-test n a)
+    (= (expmod a n n) a))
+  (define (loop a)
+    (cond ((= a 1) #t)
+          ((not (fermat-test n a)) #f)
+          (else (loop (- a 1)))))
+  (loop (- n 1)))
+
+(fermat-test-all 561)  ; => #t
+(fermat-test-all 1105) ; => #t
+(fermat-test-all 1729) ; => #t
+(fermat-test-all 2465) ; => #t
+(fermat-test-all 2821) ; => #t
+(fermat-test-all 6601) ; => #t
+
+    
+;;; Exercise 1.28: 
+;;; One variant of the Fermat test that cannot be fooled is called the Miller-Rabin test (Miller 1976; Rabin 1980). 
+;;; This starts from an alternate form of Fermat’s Little Theorem, which states that if n is a prime number and a is any positive integer less than n , 
+;;; then a raised to the ( n − 1 ) -st power is congruent to 1 modulo n . 
+;;; To test the primality of a number n by the Miller-Rabin test, we pick a random number a < n and raise a to the (n − 1)-st power modulo n using the expmod procedure. 
+;;; However, whenever we perform the squaring step in expmod, we check to see if we have discovered a “nontrivial square root of 1 modulo n ,” that is, 
+;;; a number not equal to 1 or n − 1 whose square is equal to 1 modulo n . It is possible to prove that if such a nontrivial square root of 1 exists, then n is not prime. 
+;;; It is also possible to prove that if n is an odd number that is not prime, then, for at least half the numbers a < n , computing a n − 1 in this way will 
+;;; reveal a nontrivial square root of 1 modulo n . (This is why the Miller-Rabin test cannot be fooled.)
+;;; Modify the expmod procedure to signal if it discovers a nontrivial square root of 1, and use this to implement the Miller-Rabin test with a procedure analogous to fermat-test. 
+;;; Check your procedure by testing various known primes and non-primes. Hint: One convenient way to make expmod signal is to have it return 0.
+
+(define (expmod base exp m)
+  (define (square-check x m)
+    (if (and (not (or (= x 1) (= x (- m 1))))
+             (= (remainder (* x x) m) 1))
+        0
+        (remainder (* x x) m)))
+  (define (even? n)
+    (= (remainder n 2) 0))
+  (define (square n)
+    (* n n))
+  (cond ((= exp 0) 1)
+        ((even? exp)
+         (remainder (square-check (expmod base (/ exp 2) m) m) m))
+        (else
+         (remainder (* base (expmod base (- exp 1) m)) m)))) 
+
+(define (miller-rabin-test n)
+  (define (try-it a)
+    (= (expmod a (- n 1) n) 1))
+  (try-it (+ 2 (random-integer (- n 2)))))
+
+(miller-rabin-test 561)  ; => #f
+(miller-rabin-test 1105) ; => #f
+(miller-rabin-test 1729) ; => #f
+(miller-rabin-test 2465) ; => #f
+(miller-rabin-test 2821) ; => #f
+(miller-rabin-test 6601) ; => #f
