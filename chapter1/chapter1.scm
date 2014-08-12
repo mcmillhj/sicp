@@ -1657,3 +1657,192 @@ We can use the substitution method to see why this is happening:
 (f 2) 
 (2 2) ; 2 is not a procedure that can be applied
 
+;;; Exercise 1.35: 
+;;; Show that the golden ratio φ (1.2.2) is a fixed point of the transformation x ↦ 1 + 1 / x , 
+;;; and use this fact to compute φ by means of the fixed-point procedure. 
+
+; the golden ratio approximates to 1.6180
+φ = 1 + sqrt(5)/2 ~=~ 1.6180
+
+; pick an arbitrary number x (5 in this case)
+; and apply f(x) = 1 + 1 / x to itself over and over
+; until there is a change of less than 0.00001
+x = 5 
+  = 1 + 1 / 5 
+  = 1 + 0.2
+  = 1.2 
+
+x = 1.2 
+  = 1 + 1 / 1.2 
+  = 1 + 0.8333
+  = 1.8333 
+
+x = 1.8333 
+  = 1 + 1 / 1.8333 
+  = 1 + 0.5454
+  = 1.5454
+
+x = 1.5454 
+  = 1 + 1 / 1.5454
+  = 1 + 0.6470
+  = 1.6470
+
+x = 1.6470
+  = 1 + 1 / 1.6470 
+  = 1 + 0.6071
+  = 1.6071
+
+x = 1.6071
+  = 1 + 1 / 1.6071
+  = 1 + 0.6222
+  = 1.6222
+
+x = 1.6222
+  = 1 + 1 / 1.6222
+  = 1 + 0.6164
+  = 1.6164
+
+x = 1.6164
+  = 1 + 1 / 1.6164
+  = 1 + 0.6186
+  = 1.6186
+
+x = 1.6186
+  = 1 + 1 / 1.6186
+  = 1 + 0.6178 
+  = 1.6178
+
+x = 1.6178
+  = 1 + 1 / 1.6178
+  = 1 + 0.6181
+  = 1.6181
+
+x = 1.6181 
+  = 1 + 1 / 1.6181
+  = 1 + 0.6180
+  = 1.6180
+
+x = 1.6180 
+  = 1 + 1 / 1.6180 
+  = 1 + 0.6180
+  = 1.6180
+
+; STOP, less than 0.00001 change 12 applications
+
+(define tolerance 0.00001)
+
+(define (fixed-point f first-guess)
+  (define (close-enough? v1 v2)
+    (< (abs (- v1 v2)) 
+       tolerance))
+  (define (try guess)
+    (let ((next (f guess)))
+      (if (close-enough? guess next)
+          next
+          (try next))))
+  (try first-guess))
+
+(fixed-point (lambda (x) (+ 1 (/ 1 x))) 5.0)
+; => 1.618035882908404
+
+;;; Exercise 1.36: 
+;;; Modify fixed-point so that it prints the sequence of approximations it generates, using the newline and display primitives shown in Exercise 1.22. 
+;;; Then find a solution to x^x = 1000 by finding a fixed point of x ↦ log(1000) / log(x)  
+;;; (Use Scheme’s primitive log procedure, which computes natural logarithms.) 
+;;; Compare the number of steps this takes with and without average damping. 
+;;; (Note that you cannot start fixed-point with a guess of 1, as this would cause division by log(1) = 0 .) 
+
+(define tolerance 0.00001)
+
+(define (fixed-point f first-guess)
+  (define (close-enough? v1 v2)
+    (< (abs (- v1 v2)) 
+       tolerance))
+  (define (try guess)
+    (let ((next (f guess)))
+      (display next)
+      (newline)
+      (if (close-enough? guess next)
+          next
+          (try next))))
+  (try first-guess))
+
+(fixed-point (lambda (x) (/ (log 1000) (log x))) 10.0)
+;; 2.9999999999999996
+;; 6.2877098228681545
+;; 3.7570797902002955
+;; 5.218748919675316
+;; 4.1807977460633134
+;; 4.828902657081293
+;; 4.386936895811029
+;; 4.671722808746095
+;; 4.481109436117821
+;; 4.605567315585735
+;; 4.522955348093164
+;; 4.577201597629606
+;; 4.541325786357399
+;; 4.564940905198754
+;; 4.549347961475409
+;; 4.5596228442307565
+;; 4.552843114094703
+;; 4.55731263660315
+;; 4.554364381825887
+;; 4.556308401465587
+;; 4.555026226620339
+;; 4.55587174038325
+;; 4.555314115211184
+;; 4.555681847896976
+;; 4.555439330395129
+;; 4.555599264136406
+;; 4.555493789937456
+;; 4.555563347820309
+;; 4.555517475527901
+;; 4.555547727376273
+;; 4.555527776815261
+;; 4.555540933824255
+;; 4.555532257016376
+;; 33 steps without average damping 
+
+(fixed-point (lambda (x) (/ (+ x (/ (log 1000) (log x))) 2)) 10.0)
+;; 5.095215099176933
+;; 4.668760681281611
+;; 4.57585730576714
+;; 4.559030116711325
+;; 4.55613168520593
+;; 4.555637206157649
+;; 4.55555298754564
+;; 4.555538647701617
+;; 4.555536206185039
+;; 9 steps with average damping
+
+;;; Exercise 1.37:
+
+;;; An infinite continued fraction is an expression of the form 
+;;; f = N1 
+;;;    ---- 
+;;;    D1 + N2 
+;;;         ----
+;;;         D2 + N3 
+;;;              ---- 
+;;;              D3 + ...  
+;;; As an example, one can show that the infinite continued fraction expansion with the N i and the D i all equal to 1 produces 1 / φ , where φ is the golden ratio (described in 1.2.2). 
+;;; One way to approximate an infinite continued fraction is to truncate the expansion after a given number of terms. 
+;;; Such a truncation—a so-called finite continued fraction k-term finite continued fraction—has the form
+;;; f = N1 
+;;;    ---- 
+;;;    D1 + N2 
+;;;         ----
+;;;         . + NK 
+;;;          .  ---- 
+;;;           . DK + ..
+;;; Suppose that n and d are procedures of one argument (the term index i ) that return the N i and D i of the terms of the continued fraction. 
+;;; Define a procedure cont-frac such that evaluating (cont-frac n d k) computes the value of the k -term finite continued fraction. 
+;;; Check your procedure by approximating 1 / φ using
+
+(cont-frac (lambda (i) 1.0)
+           (lambda (i) 1.0)
+           k)
+
+;;; for successive values of k. How large must you make k in order to get an approximation that is accurate to 4 decimal places?
+;;; If your cont-frac procedure generates a recursive process, write one that generates an iterative process. 
+;;; If it generates an iterative process, write one that generates a recursive process. 
